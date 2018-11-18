@@ -26,6 +26,11 @@ module.exports = {
     module: {
         rules: [
             {
+                test: /.flave$/,
+                exclude: /(node_modules)/,
+                use: ['babel-loader', 'flave-loader']
+            },
+            {
                 test: /\.(js|jsx|tsx|ts)$/,
                 exclude: /(node_modules)/,
                 loader: 'babel-loader'

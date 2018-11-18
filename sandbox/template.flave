@@ -1,0 +1,37 @@
+class Template{
+    view button{
+        <button></button>
+    }
+    view header{
+        <h1>@(data)</h1>
+    }
+    view entity{
+        <div class="entity" data-entity="@(data.uuid)">
+            <div class="name">@(data.name)</div>
+            <div class="id">@(data.id)</div>
+            <div class="attributes">
+            @(this.attributes(data.attributes))
+            </div>
+            <div class="actions">
+                @for(const key in data.abilities) 
+                    @(this.ability({ entity:data, ability:data.abilities[key]}))
+            </div>
+        </div>
+    }
+    view attributes{
+        @for(var key in data) {
+            @{const attribute = data[key]; }
+            <div class="attribute">
+                <b>@(data[key].name)</b> @(data[key].value)
+            </div>
+            
+        }
+    }
+    view ability{
+        @{ const {ability, entity} = data; }
+        <button data-entity="@(entity.uuid)" data-ability="@(ability.uuid)">@(ability.name)</button>
+    }
+    view tr{
+        <td>1</td><td>2</td>
+    }
+}

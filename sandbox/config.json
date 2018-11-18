@@ -1,0 +1,114 @@
+{
+    "entities": {
+        "entity1": {
+            "name": "Entity 1",
+            "attributes": {
+                "health": 100,
+                "mana": 100
+            },
+            "abilities": [
+                {
+                    "refId": "attack"
+                },
+                {
+                    "refId": "heal"
+                }
+            ]
+        },
+        "entity2": {
+            "name": "Entity 2",
+            "attributes": {
+                "health": 100,
+                "mana": 100
+            },
+            "abilities": [
+                {
+                    "refId": "attack"
+                },
+                {
+                    "refId": "heal"
+                }
+            ]
+        },
+        "entity3": {
+            "name": "Entity 3",
+            "attributes": {
+                "health": 100,
+                "mana": 100
+            },
+            "abilities": [
+                {
+                    "refId": "attack"
+                },
+                {
+                    "refId": "heal"
+                }
+            ]
+        },
+        "entity4": {
+            "name": "Entity 4",
+            "attributes": {
+                "health": 100,
+                "mana": 100
+            },
+            "abilities": [
+                {
+                    "refId": "attack"
+                },
+                {
+                    "refId": "heal"
+                }
+            ]
+        }
+    },
+    "abilities": {
+        "attack": {
+            "name": "Attack",
+            "effects": [
+                {
+                    "refId": "damage"
+                }
+            ]
+        },
+        "heal": {
+            "name": "Heal",
+            "effects": [
+                {
+                    "refId": "heal"
+                }
+            ]
+        }
+    },
+    "attributes": {
+        "health": {
+            "name": "Health",
+            "min": 0,
+            "max": 1000
+        },
+        "mana": {
+            "name": "Mana",
+            "min": 0,
+            "max": 100
+        }
+    },
+    "effects": {
+        "damage": {
+            "duration": 0,
+            "modifiers": [
+                {
+                    "attribute": "health",
+                    "value": -10
+                }
+            ]
+        },
+        "heal": {
+            "duration": 0,
+            "modifiers": [
+                {
+                    "attribute": "health",
+                    "value": 10
+                }
+            ]
+        }
+    }
+}
