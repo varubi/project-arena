@@ -1,26 +1,42 @@
-import { UUID, Dictionary } from './util';
 import { Effect } from './effect';
+import { BaseClass } from './base';
+import { AbilityContext } from './context';
+import { Dictionary } from './dictionary';
 
-export class Ability {
-    public id: string = '';
-    public uuid: UUID;
-    public name: string = '';
-    public effects: Dictionary<Effect> = {};
+export class Ability extends BaseClass {
+    static objectType = 'Ability';
+    context?: AbilityContext;
+    name: string = '';
+    effects: Dictionary<Effect> = new Dictionary<Effect>();
+    triggerAction: boolean = true;
 
-    constructor(settings: AbilitySettings) {
-        const { id, name, effects } = settings;
-        this.id = id;
+    constructor(settings: AbilitySettings, instantiate?: boolean) {
+        super(Ability, settings, instantiate);
+        const { name, effects, triggerAction } = settings;
         this.name = name;
-        this.uuid = new UUID(['Ability', id]);
-        this.effects = effects;
+        this.triggerAction = triggerAction;
+        this.effects = effects.clone(instantiate)
     }
-    public clone(): Ability {
-        const cloned = new Ability({ id: this.id, name: this.name, effects: this.effects });
-        return cloned;
+
+    addContext(context: AbilityContext) {
+        this.context = context;
+        this.effects.forEach((item) => item.addContext(context))
+    }
+
+    toJSON() {
+        const obj = BaseClass.ToJSON(this);
+        obj.name = this.name;
+        obj.effects = {}
+        this.effects.forEach((item, key) => {
+            obj.effects[key] = item.toJSON();
+        })
+        return obj;
     }
 }
+
 interface AbilitySettings {
-    id: string,
-    name: string,
+    id: string
+    name: string
     effects: Dictionary<Effect>
+    triggerAction: boolean
 }

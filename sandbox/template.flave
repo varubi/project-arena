@@ -5,16 +5,17 @@ class Template{
     view header{
         <h1>@(data)</h1>
     }
+    view entities{
+        <div class="entities"></div>
+    }
     view entity{
         <div class="entity" data-entity="@(data.uuid)">
             <div class="name">@(data.name)</div>
-            <div class="id">@(data.id)</div>
             <div class="attributes">
-            @(this.attributes(data.attributes))
+            @(this.attributes(data.attributes.toJSON()))
             </div>
             <div class="actions">
-                @for(const key in data.abilities) 
-                    @(this.ability({ entity:data, ability:data.abilities[key]}))
+                @(this.abilities({ entity:data, abilities: data.abilities.toJSON()}))
             </div>
         </div>
     }
@@ -27,9 +28,12 @@ class Template{
             
         }
     }
-    view ability{
-        @{ const {ability, entity} = data; }
-        <button data-entity="@(entity.uuid)" data-ability="@(ability.uuid)">@(ability.name)</button>
+    view abilities{
+        @{ const {abilities, entity} = data; }        
+        @for(var key in abilities) {
+            @{const ability = abilities[key]; }
+            <button data-entity="@(entity.uuid)" data-ability="@(ability.uuid)">@(ability.name)</button>
+        }
     }
     view tr{
         <td>1</td><td>2</td>

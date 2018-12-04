@@ -1,23 +1,42 @@
 html,body{
-    padding: 0;
-    margin: 0;
     height: 100%;
     width: 100%;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
+
 *{
-    box-sizing: content-box;
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
 }
+
 button{
     padding: 16px;
-    min-width: 250px;
     font-weight: 700;
     border: none;
     border-radius: 2px;
     box-shadow: 2px 2px 3px -1px rgba(0,0,0,.4);
-    cursor: pointer;
-   
+    cursor: pointer;   
     background: rgb(232,232,232);
     background: linear-gradient(128deg, rgba(232,232,232,1) 0%, rgba(246,246,246,1) 68%, rgba(230,230,230,1) 100%);
-
+}
+.entities{
+    display: flex;
+    .entity{
+        flex: 1 1 auto;
+        border: solid 1px #DDD;
+        width: auto;
+        margin: 12px;
+        padding: 12px;
+        &>*{
+            width: 100%;
+            display: flex;
+            flex-flow: row wrap;
+            align-content: space-between;
+            justify-content: space-between;
+            &>*{
+                width:45%;
+            }
+        }
+    }
 }

@@ -1,28 +1,47 @@
 import { Modifier } from "./modifier";
-import { ToArray, UUID, ArrayClone } from "./util";
+import { ArrayClone, coalesce } from "./util";
+import { TimeUnit } from "./enums";
+import { BaseClass } from "./base";
+import { AbilityContext, EffectContext } from "./context";
 
-export class Effect {
-    public id: string;
-    public uuid: UUID;
-    public duration?: number;
-    public modifiers: Array<Modifier> = [];
-    constructor(settings: EffectSettings) {
-        const { id, duration, modifiers } = settings;
-        this.id = id;
-        this.uuid = new UUID(['Ability', id]);
-        this.duration = duration;
-        this.modifiers = ToArray(modifiers);
+export class Effect extends BaseClass {
+    static objectType = 'Effect';
+    context?: EffectContext;
+
+    priorty: EffectPriorty = { major: 50, minor: 50 };
+    tick: TimeUnit = TimeUnit.Immediate;
+    local: any = {}
+    modifiers: Array<Modifier> = [];
+    rolls: Array<number> = [0];
+
+    constructor(settings: EffectSettings, instantiate?: boolean) {
+        super(Effect, settings, instantiate);
+        const { local, modifiers, priorty } = settings;
+        this.local = coalesce(local, this.local);
+        this.modifiers = ArrayClone(modifiers, instantiate);
+        this.priorty.minor = coalesce(priorty.minor, this.priorty.minor);
+        this.priorty.major = coalesce(priorty.major, this.priorty.major);
     }
-    clone(): Effect {
-        return new Effect({
-            id: this.id,
-            duration: this.duration,
-            modifiers: ArrayClone<Modifier>(this.modifiers)
-        });
+
+    addContext(context: AbilityContext) {
+        this.context = context.effectContext({ effect: this });
+        this.modifiers.map(m => m.addContext(<EffectContext>this.context));
+    }
+
+    toJSON() {
+        const obj = BaseClass.ToJSON(this);
+        obj.priorty = this.priorty;
+        obj.tick = this.tick;
+        obj.local = this.local;
+        obj.modifiers = this.modifiers.map(m => m.toJSON());
+
+        return obj;
     }
 }
 interface EffectSettings {
     id: string
-    duration?: number
-    modifiers: Modifier | Array<Modifier>
+    local: any
+    modifiers: Array<Modifier>
+    priorty: EffectPriorty
 }
+interface EffectPriorty { major: number, minor: number }

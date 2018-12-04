@@ -1,48 +1,57 @@
-import { Ability } from './ability';
 import { Entity } from './entity';
-import { ActivityLog } from './activitylog';
-import { Dictionary } from './util';
+import { History } from './history';
+import { Filter } from './util';
+import { Timekeeper } from './timekeeper';
+import { Context } from './context';
+import { TimeUnit } from './enums';
+import { Dictionary } from './dictionary';
 
 export class Encounter {
-    private log: ActivityLog = new ActivityLog();
-    private entities: Dictionary<Entity> = {};
+    timekeeper: Timekeeper = new Timekeeper();
+    history: History = new History();
+    entities: Dictionary<Entity> = new Dictionary<Entity>();
+    context: Context;
 
     constructor(settings: EncounterSettings) {
-        if (settings.entities) {
-            for (const key in settings.entities) {
-                this.addEntity(settings.entities[key]);
-            }
-        }
+        this.context = new Context({
+            encounter: this,
+            history: this.history,
+            timekeeper: this.timekeeper
+        });
+
+        this.timekeeper.addListener((updated: TimeUnit) => {
+            this.getEntities(e => !!(e.effectTicks & updated));
+        });
+        if (settings.entities)
+            settings.entities.forEach(entity => this.addEntity(entity))
     }
-    public addEntity(entity: Entity) {
-        if (this.entities[entity.uuid.objectId])
+
+    addEntity(entity: Entity): void {
+        if (this.entities.get(entity.uuid.objectId))
             return;
-        this.entities[entity.uuid.objectId] = entity;
-        entity.linkEncounter(this);
+        this.entities.addUUID(entity)
+        entity.addContext(this.context);
+        this.history.log('Entity', { entity: entity, toJSON: () => entity.toJSON() })
     }
-    public entityAction(entity: Entity, ability: Ability, target: Entity) {
-        this.log.add({
-            time: Date.now(),
-            src: entity,
-            target: target,
-            ability: ability
-        })
-        console.log(this.log)
-        target.applyEffect(ability.effects);
+
+    getEntities(filter: Filter<Entity>): Array<Entity> {
+        return this.entities.filter(filter);
     }
-    public filterEntities(filter: (d: any) => {}): Array<Entity> {
-        const results: Array<Entity> = [];
-        for (const key in this.entities) {
-            if (filter(this.entities[key]))
-                results.push(this.entities[key]);
+
+    entity(id: string): Entity {
+        return this.entities.get(id)
+    }
+    toJSON(): any {
+        return {
+            timekeeper: this.timekeeper,
+            history: this.history.toJSON(),
+            entities: this.entities.toJSON(),
+            context: this.context
         }
-        return results;
-    }
-    public entity(id: string): void | Entity {
-        if (this.entities[id])
-            return this.entities[id];
     }
 }
+
+
 interface EncounterSettings {
     entities?: Dictionary<Entity>
 }

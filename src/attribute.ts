@@ -1,52 +1,42 @@
-import { UUID, coalesce } from './util';
+import { coalesce, cap } from './util';
+import { BaseClass } from './base';
 
-export class Attribute {
-    public id: string;
-    public uuid: UUID;
-    public name: string = '';
-    public min: number | null = null;
-    public max: number | null = null;
-    public value: number = 0;
+export class Attribute extends BaseClass {
+    static objectType = 'Attribute';
 
-    constructor(settings: AttributeSettings) {
-        const { id, name, min, max, value } = settings;
-        this.id = id;
+    visible: boolean = true;
+    name: string = '';
+    min: number | null = null;
+    max: number | null = null;
+    value: number = 0;
+
+    constructor(settings: AttributeSettings, instantiate?: boolean) {
+        super(Attribute, settings, instantiate);
+        const { name, min, max, value, visible } = settings;
         this.name = name;
         this.min = coalesce(min, this.min);
         this.max = coalesce(max, this.max);
         this.value = coalesce(value, this.value);
-        this.uuid = new UUID(['Attribute', id]);
+        this.visible = coalesce(visible, this.visible);
     }
 
-
-    public apply(value: number) {
-        if (this.max && this.value + value > this.max)
-            return false;
-        if (this.min && this.value + value < this.min)
-            return false;
-
-        this.value += value;
-        return true;
+    apply(value: number) {
+        this.value = cap(this.value + value, this.min, this.max);
     }
 
-    public set(value: number) {
-        if (this.max && value > this.max)
-            return false;
-        if (this.min && value < this.min)
-            return false;
-
-        this.value = value;
-        return true;
+    set(value: number) {
+        this.value = cap(value, this.min, this.max);
     }
 
-    public clone() {
-        return new Attribute({
-            id: this.id,
-            name: this.name,
-            value: this.value,
-            min: this.min,
-            max: this.max,
-        });
+    toJSON() {
+        const obj = BaseClass.ToJSON(this);
+        obj.name = this.name;
+        obj.visible = this.visible;
+        obj.min = this.min;
+        obj.max = this.max;
+        obj.value = this.value;
+
+        return obj;
     }
 }
 
@@ -56,4 +46,5 @@ interface AttributeSettings {
     min?: number | null
     max?: number | null
     value?: number
+    visible?: boolean
 }
