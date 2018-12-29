@@ -1,18 +1,20 @@
-import { UUID } from "./uuid";
+import { OID } from "./oid";
 import { Context } from "./context";
 
 export abstract class BaseClass {
-    static objectType: string = 'BaseClass';
+    static className: string = 'BaseClass';
 
     id: string = '';
-    uuid: UUID;
-    objectReference: any = BaseClass;
+    oid: OID;
+    root: this = this;
+    subclass: any = BaseClass;
     context?: Context;
 
-    constructor(objectReference: any, settings: { id: string }, instantiate?: boolean) {
-        this.objectReference = objectReference;
-        this.id = settings.id || (objectReference.objectType + '-' + UUID.random());
-        this.uuid = BaseClass.UUID([objectReference.objectType, this.id], instantiate);
+    constructor(objectReference: any, settings: { id: string, root?: any }, instantiate?: boolean) {
+        this.root = settings.root || this;
+        this.subclass = objectReference;
+        this.id = settings.id || (objectReference.className + '-' + OID.random());
+        this.oid = BaseClass.OID([objectReference.className, this.id], instantiate);
     }
 
     addContext(context: Context) {
@@ -20,11 +22,15 @@ export abstract class BaseClass {
     }
 
     clone(instantiate?: boolean): this {
-        return new (<any>this.objectReference)(this, instantiate);
+        return new (<any>this.subclass)(this, instantiate);
+    }
+    
+    cloneRoot(instantiate?: boolean): this {
+        return new (<any>this.subclass)(this.root, instantiate);
     }
 
     toString() {
-        return this.uuid.toString();
+        return this.oid.toString();
     }
 
     toJSON() {
@@ -33,13 +39,13 @@ export abstract class BaseClass {
 
     static ToJSON(object: BaseClass & any): any {
         return {
-            objectType: object.objectReference.objectType,
             id: object.id,
-            uuid: object.uuid.toString(),
+            oid: object.oid.toString(),
+            subclass: object.subclass.className,
         };
     }
 
-    static UUID(id: string | Array<string>, instantiate?: boolean) {
-        return new UUID(id, instantiate)
+    static OID(id: string | Array<string>, instantiate?: boolean) {
+        return new OID(id, instantiate)
     }
 }

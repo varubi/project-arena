@@ -1,20 +1,21 @@
 export enum JSONType {
-    Null = bitFlag(0),
-    String = bitFlag(1),
-    Number = bitFlag(2),
-    Array = bitFlag(3),
-    Object = bitFlag(4),
-    Boolean = bitFlag(5),
-    Integer = bitFlag(2) | bitFlag(6),
+    Null = bit(0),
+    String = bit(1),
+    Number = bit(2),
+    Array = bit(3),
+    Object = bit(4),
+    Boolean = bit(5),
+    Integer = bit(2) | bit(6),
 }
 
 export enum TimeUnit {
-    Immediate = bitFlag(0),
-    Action = bitFlag(1),
-    Turn = bitFlag(2),
-    Round = bitFlag(3),
-    Encounter = bitFlag(4),
-    Millisecond = bitFlag(5),
+    Immediate = bit(0),
+    Action = bit(1),
+    Turn = bit(2),
+    Round = bit(3),
+    Encounter = bit(4),
+    VirtualTime = bit(5),
+    RealTime = bit(6),
 }
 
 export enum Persistance {
@@ -22,6 +23,6 @@ export enum Persistance {
     Permanent
 }
 
-function bitFlag(i: number) {
+function bit(i: number) {
     return 1 << i;
 }

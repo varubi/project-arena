@@ -5,14 +5,15 @@ import { Attribute } from './attribute';
 import { BaseClass } from './base';
 import { Context, EntityContext, EffectContext } from './context';
 import { TimeUnit } from './enums';
-import { Dictionary } from './dictionary';
+import { KVDB } from './kvdb';
+
 export class Entity extends BaseClass {
-    static objectType = 'Entity';
+    static className = 'Entity';
     context?: EntityContext;
 
     name: string = '';
-    abilities: Dictionary<Ability>;
-    attributes: Dictionary<Attribute>;
+    abilities: KVDB<Ability>;
+    attributes: KVDB<Attribute>;
     effects: Array<Effect> = [];
     effectTicks: TimeUnit = 0;
 
@@ -28,7 +29,7 @@ export class Entity extends BaseClass {
     applyEffect(effect: Effect) {
         if (effect.context)
             effect.modifiers.forEach(m => {
-                const atr = this.attributes.get(m.attributeUUID);
+                const atr = this.attributes.get(m.attributeOID);
                 if (atr)
                     atr.apply(m.value(<EffectContext>effect.context));
             })
@@ -49,8 +50,8 @@ export class Entity extends BaseClass {
         return this.effects.filter(filter);
     }
 
-    removeEffect(uuid: string) {
-        this.effects = this.effects.filter(e => (e.uuid.toString() != uuid))
+    removeEffect(oid: string) {
+        this.effects = this.effects.filter(e => (e.oid.toString() != oid))
         this.refreshEffectTick();
     }
 
@@ -58,13 +59,13 @@ export class Entity extends BaseClass {
         this.effectTicks = this.effects.reduce((ticks, effect) => ticks | effect.tick, 0)
     }
 
-    castAbility(abilityUUID: string, targetUUID?: string) {
+    castAbility(abilityOID: string, targetOID?: string) {
         if (!this.context)
             return;
-        const ability: Ability = this.abilities.get(abilityUUID);
+        const ability: Ability = this.abilities.get(abilityOID);
         if (!ability)
             return;
-        const target = !targetUUID ? this : this.context.encounter.getEntities(d => d.uuid.objectId == targetUUID)[0];
+        const target = !targetOID ? this : this.context.encounter.getEntities(d => d.oid.rootId == targetOID)[0];
         if (!target)
             return;
         const cast = ability.clone(true)
@@ -83,6 +84,7 @@ export class Entity extends BaseClass {
                 }
             }
         });
+
         if (ability.triggerAction)
             this.context.timekeeper.tick(TimeUnit.Action);
     }
@@ -108,6 +110,6 @@ export class Entity extends BaseClass {
 interface EntitySettings {
     id: string,
     name: string,
-    abilities: Dictionary<Ability>,
-    attributes: Dictionary<Attribute>
+    abilities: KVDB<Ability>,
+    attributes: KVDB<Attribute>
 }

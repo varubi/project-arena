@@ -4,12 +4,12 @@ import { Filter } from './util';
 import { Timekeeper } from './timekeeper';
 import { Context } from './context';
 import { TimeUnit } from './enums';
-import { Dictionary } from './dictionary';
+import { KVDB } from './kvdb';
 
 export class Encounter {
     timekeeper: Timekeeper = new Timekeeper();
     history: History = new History();
-    entities: Dictionary<Entity> = new Dictionary<Entity>();
+    entities: KVDB<Entity> = new KVDB<Entity>();
     context: Context;
 
     constructor(settings: EncounterSettings) {
@@ -22,16 +22,17 @@ export class Encounter {
         this.timekeeper.addListener((updated: TimeUnit) => {
             this.getEntities(e => !!(e.effectTicks & updated));
         });
+
         if (settings.entities)
             settings.entities.forEach(entity => this.addEntity(entity))
     }
 
     addEntity(entity: Entity): void {
-        if (this.entities.get(entity.uuid.objectId))
+        if (this.entities.get(entity.oid.rootId))
             return;
-        this.entities.addUUID(entity)
+        this.entities.addOID(entity)
         entity.addContext(this.context);
-        this.history.log('Entity', { entity: entity, toJSON: () => entity.toJSON() })
+        this.history.log('entity', { entity: entity, toJSON: () => entity.toJSON() })
     }
 
     getEntities(filter: Filter<Entity>): Array<Entity> {
@@ -41,6 +42,7 @@ export class Encounter {
     entity(id: string): Entity {
         return this.entities.get(id)
     }
+    
     toJSON(): any {
         return {
             timekeeper: this.timekeeper,
@@ -53,5 +55,5 @@ export class Encounter {
 
 
 interface EncounterSettings {
-    entities?: Dictionary<Entity>
+    entities?: KVDB<Entity>
 }

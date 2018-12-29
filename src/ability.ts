@@ -1,13 +1,13 @@
 import { Effect } from './effect';
 import { BaseClass } from './base';
 import { AbilityContext } from './context';
-import { Dictionary } from './dictionary';
+import { KVDB } from './kvdb';
 
 export class Ability extends BaseClass {
-    static objectType = 'Ability';
+    static className = 'Ability';
     context?: AbilityContext;
     name: string = '';
-    effects: Dictionary<Effect> = new Dictionary<Effect>();
+    effects: KVDB<Effect> = new KVDB<Effect>();
     triggerAction: boolean = true;
 
     constructor(settings: AbilitySettings, instantiate?: boolean) {
@@ -20,16 +20,14 @@ export class Ability extends BaseClass {
 
     addContext(context: AbilityContext) {
         this.context = context;
-        this.effects.forEach((item) => item.addContext(context))
+        this.effects.forEach(item => item.addContext(context))
     }
 
     toJSON() {
         const obj = BaseClass.ToJSON(this);
         obj.name = this.name;
         obj.effects = {}
-        this.effects.forEach((item, key) => {
-            obj.effects[key] = item.toJSON();
-        })
+        this.effects.forEach((item, key) => obj.effects[key] = item.toJSON())
         return obj;
     }
 }
@@ -37,6 +35,6 @@ export class Ability extends BaseClass {
 interface AbilitySettings {
     id: string
     name: string
-    effects: Dictionary<Effect>
+    effects: KVDB<Effect>
     triggerAction: boolean
 }

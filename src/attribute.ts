@@ -2,7 +2,7 @@ import { coalesce, cap } from './util';
 import { BaseClass } from './base';
 
 export class Attribute extends BaseClass {
-    static objectType = 'Attribute';
+    static className = 'Attribute';
 
     visible: boolean = true;
     name: string = '';

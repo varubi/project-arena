@@ -26,6 +26,11 @@ module.exports = {
     module: {
         rules: [
             {
+                test: /\.yaml$/,
+                exclude: /(node_modules)/,
+                loader: ['json-loader', 'yaml-loader'],
+            },
+            {
                 test: /.flave$/,
                 exclude: /(node_modules)/,
                 use: ['babel-loader', 'flave-loader']

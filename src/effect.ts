@@ -1,18 +1,19 @@
 import { Modifier } from "./modifier";
-import { ArrayClone, coalesce } from "./util";
+import { ArrayClone, coalesce, Priorty } from "./util";
 import { TimeUnit } from "./enums";
 import { BaseClass } from "./base";
 import { AbilityContext, EffectContext } from "./context";
 
 export class Effect extends BaseClass {
-    static objectType = 'Effect';
+    static className = 'Effect';
     context?: EffectContext;
 
-    priorty: EffectPriorty = { major: 50, minor: 50 };
+    priorty: Priorty = { major: 50, minor: 50 };
     tick: TimeUnit = TimeUnit.Immediate;
     local: any = {}
     modifiers: Array<Modifier> = [];
     rolls: Array<number> = [0];
+    
 
     constructor(settings: EffectSettings, instantiate?: boolean) {
         super(Effect, settings, instantiate);
@@ -42,6 +43,6 @@ interface EffectSettings {
     id: string
     local: any
     modifiers: Array<Modifier>
-    priorty: EffectPriorty
+    priorty: Priorty
+    tick: TimeUnit
 }
-interface EffectPriorty { major: number, minor: number }

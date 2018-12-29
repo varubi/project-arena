@@ -1,8 +1,9 @@
 import { Filter, clone } from './util';
 import { BaseClass } from './base';
-import { KeyValuePair } from './util';
-export class Dictionary<T>{
-    items: KeyValuePair<T> = {};
+import { Dictionary } from './util';
+export class KVDB<T>{
+    items: Dictionary<T> = {};
+
     constructor() {
 
     }
@@ -15,11 +16,11 @@ export class Dictionary<T>{
         this.items[key] = obj;
     }
 
-    addUUID(obj: T & BaseClass) {
-        this.items[obj.uuid.objectId] = obj;
+    addOID(obj: T & BaseClass) {
+        this.items[obj.oid.rootId] = obj;
     }
 
-    apply(reference: KeyValuePair<T>) {
+    apply(reference: Dictionary<T>) {
         for (const key in reference)
             this.set(key, reference[key])
     }
@@ -28,8 +29,8 @@ export class Dictionary<T>{
         delete this.items[key];
     }
 
-    clone(instantiate?: boolean): Dictionary<T> {
-        const cloned: Dictionary<T> = new Dictionary<T>();
+    clone(instantiate?: boolean): KVDB<T> {
+        const cloned: KVDB<T> = new KVDB<T>();
         this.forEach((item, key) => cloned.set(key, clone<T>(item, instantiate)))
         return cloned;
     }
@@ -44,13 +45,15 @@ export class Dictionary<T>{
         this.forEach(item => filter(item) && results.push(item))
         return results;
     }
-    toJSON(): KeyValuePair<T> {
-        const json: KeyValuePair<T> = {};
+
+    toJSON(): Dictionary<T> {
+        const json: Dictionary<T> = {};
         this.forEach((item, key) => json[key] = typeof (<any>item).toJSON == 'function' ? (<any>item).toJSON() : item)
         return json;
     }
-    static CreateFrom<T>(reference: KeyValuePair<T>) {
-        const result = new Dictionary<T>();
+
+    static CreateFrom<T>(reference: Dictionary<T>) {
+        const result = new KVDB<T>();
         result.apply(reference);
         return result;
     }
