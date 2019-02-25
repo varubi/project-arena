@@ -8,6 +8,14 @@ export function coalesce(...args: any[]) {
             return args[i];
     }
 }
+export function GetProperty<T>(obj: any, key: string): T {
+    const keys: Array<string> = key.split('.');
+    let ref = obj;
+    for (let index = 0; index < keys.length; index++)
+        ref = ref[keys[index]]
+
+    return <T>ref;
+}
 export function roll(string: string): number {
     const matches = string.match(/^\s*(\d*)\s*d\s*(\d+)\s*$/i);
     if (!matches)

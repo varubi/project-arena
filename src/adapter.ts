@@ -1,119 +1,150 @@
 import { Attribute } from "./attribute";
 import { Entity } from "./entity";
 import { Ability } from "./ability";
-import { Dictionary } from "./util";
+import { Dictionary, ToArray } from "./util";
 import { Effect } from "./effect";
 import { Modifier, ModifierValue } from "./modifier";
 import { Encounter } from "./encounter";
 import { EffectContext } from "./context";
 import { TimeUnit } from "./enums";
 import { KVDB } from "./kvdb";
-import { BaseClass } from "./base";
-
 export class GameAdapter {
-    attributes: Dictionary<Attribute> = {}
-    effects: Dictionary<Effect> = {}
-    abilities: Dictionary<Ability> = {}
-    entities: KVDB<Entity>;
+    attributes: InheritableJSON<JSONAttribute>
+    effects: InheritableJSON<JSONEffect>
+    abilities: InheritableJSON<JSONAbility>
+    entities: InheritableJSON<JSONEntity>;
     encounter: Encounter;
 
     constructor(settings: GameAdapterSettings) {
-        this.attributes = this.adaptAttributes(settings.attributes);
-        this.effects = this.adaptEffects(settings.effects);
-        this.abilities = this.adaptAbilities(settings.abilities, this.effects);
-        this.entities = this.adaptEntities(settings.entities);
-        this.encounter = new Encounter({ entities: this.entities });
-    }
-
-    adaptEntities(settings: Dictionary<JSONEntity>): KVDB<Entity> {
+        this.attributes = InheritableJSON.CreateResolvedFrom(settings.attributes, 'inherits');
+        this.effects = InheritableJSON.CreateResolvedFrom(settings.effects, 'inherits');
+        this.abilities = InheritableJSON.CreateResolvedFrom(settings.abilities, 'inherits');
+        this.entities = InheritableJSON.CreateResolvedFrom(settings.entities, 'inherits');
         const entities: KVDB<Entity> = new KVDB<Entity>();
-        for (const key in settings) {
-            const atts: Dictionary<Attribute> = {};
-            for (const at in settings[key].attributes) {
-                const entatt = settings[key].attributes[at];
-                const attr = this.attributes[at];
-                if (attr) {
-                    atts[attr.oid.rootId] = attr.clone();
-                    atts[attr.oid.rootId].value = (typeof entatt == 'number' ? entatt : entatt.value) || 0;
-                }
-            }
-
-            entities.addOID(
-                new Entity({
-                    id: key,
-                    name: settings[key].name,
-                    attributes: KVDB.CreateFrom<Attribute>(atts),
-                    abilities: this.refMap<Ability>(settings[key].abilities, this.abilities)
-                })
-            )
-        }
-        return entities;
+        this.entities.forEach((entity, k) => {
+            entities.addOID(new Entity({
+                id: k,
+                name: entity.name,
+                attributes: this.resolveAttributes(entity.attributes),
+                abilities: this.resolveAbilities(entity.abilities)
+            }))
+        })
+        this.encounter = new Encounter({ entities });
     }
 
-    adaptAttributes(settings: Dictionary<JSONAttribute>): Dictionary<Attribute> {
-        const attributes: Dictionary<Attribute> = {};
-        for (const key in settings)
-            attributes[key] = new Attribute({
-                id: key,
-                name: settings[key].name,
-                min: settings[key].min,
-                max: settings[key].max
-            });
-
-        return attributes;
-    }
-
-    adaptAbilities(settings: Dictionary<JSONAbility>, effects: Dictionary<Effect>): Dictionary<Ability> {
-        const abilities: Dictionary<Ability> = {};
-        for (const key in settings) {
-            abilities[key] = new Ability({
-                id: key,
-                name: settings[key].name,
-                effects: this.refMap<Effect>(settings[key].effects, effects),
+    resolveAbilities(abilities: Array<JSONAbility>): KVDB<Ability> {
+        const results = this.abilities
+            .query(abilities)
+            .map(v => new Ability({
+                id: v.inherits!,
+                name: v.name,
+                effects: this.resolveEffects(v.effects),
                 triggerAction: true
-            });
-        }
-        return abilities;
+            }))
+        return KVDB.CreateFromArray(results, 'oid.rootId')
     }
 
-    adaptEffects(settings: Dictionary<JSONEffect>): Dictionary<Effect> {
-        const effects: Dictionary<Effect> = {};
-        for (const key in settings) {
-            effects[key] = new Effect({
-                id: key,
-                local: settings[key].local,
-                modifiers: this.adaptModifier(settings[key].modifiers),
+    resolveEffects(effects: Array<JSONEffect>): KVDB<Effect> {
+        const results = this.effects
+            .query(effects)
+            .map((v, key) => new Effect({
+                id: key.toString(),
+                local: v.local,
+                modifiers: GameAdapter.adaptModifier(v.modifiers),
                 priorty: { minor: 50, major: 50 },
                 tick: TimeUnit.Immediate
-            });
-        }
-        return effects;
+            }));
+        return KVDB.CreateFromArray(results, 'oid.rootId')
     }
 
-    adaptModifier(settings: Array<JSONModifier>): Array<Modifier> {
+    resolveAttributes(attributes: Dictionary<number | JSONAttribute>): KVDB<Attribute> {
+        const result = new KVDB<Attribute>();
+        for (const attribute in attributes) {
+            let queried;
+            if (typeof attributes[attribute] == 'number') {
+                queried = this.attributes.query(<JSONAttribute>{ inherits: attribute, value: <number>attributes[attribute] })
+            } else {
+                queried = this.attributes.query({ ...<JSONAttribute>attributes[attribute], inherits: attribute })
+            }
+            queried[0]
+            result.addOID(new Attribute({ ...queried[0], id: attribute }))
+        }
+        return result;
+    }
+
+    static adaptModifier(settings: Array<JSONModifier>): Array<Modifier> {
         return settings.map(m =>
             new Modifier({
                 id: '',
                 attribute: m.attribute,
-                value: this.adaptModifierValues(m.value),
+                value: GameAdapter.adaptModifierValues(m.value),
                 priorty: { minor: 50, major: 50 }
             })
         )
     }
 
-    adaptModifierValues(value: number | ModifierValue): ModifierValue {
+    static adaptModifierValues(value: number | ModifierValue): ModifierValue {
         return <ModifierValue>(typeof value == 'number' ? (context: EffectContext) => value : value)
     }
+}
 
-    refMap<T>(ids: Array<JSONRef | string>, map: Dictionary<T & BaseClass>): KVDB<T> {
-        const dict: KVDB<T> = new KVDB<T>();
+class InheritableJSON<T> extends KVDB<T>  {
+    referenceKey: string = '';
+    constructor(key: string) {
+        super();
+        this.referenceKey = key;
+    }
+
+    query(ids: string | T | Array<string | T>): Array<T> {
+        ids = ToArray(ids);
+        const results: Array<T> = []
         for (let i = 0; i < ids.length; i++) {
-            const id: string = ids[i].hasOwnProperty('references') ? (<JSONRef>ids[i]).references : '';
-            const obj = map[id]
-            if (obj)
-                dict.addOID(obj.clone());
+            results.push(this.resolve(ids[i]));
         }
-        return dict;
+        return results;
+    }
+
+    resolve(id: string | T): T {
+        const usedKeys: Dictionary<boolean> = {};
+        let ref: string | null = null;
+        const refs: Array<T> = [];
+        if (typeof id == 'string') {
+            ref = id;
+        } else {
+            refs.push(id)
+            if (id.hasOwnProperty(this.referenceKey)) {
+                ref = (<any>id)[this.referenceKey]
+            }
+        }
+        while (ref) {
+            if (this.db[ref]) {
+                usedKeys[ref] = true;
+                refs.push(this.db[ref])
+                if (this.db[ref].hasOwnProperty(this.referenceKey)) {
+                    ref = ((<any>this.db[ref])[this.referenceKey])
+                } else {
+                    ref = null;
+                }
+            } else {
+                throw `Unknown reference '${ref}'`
+            }
+            if (ref && usedKeys[ref]) {
+                throw `Circular refernce '${ref}'`;
+            }
+        }
+        return Object.assign({}, ...refs.reverse());
+    }
+
+    resolveAll() {
+        this.forEach((v, k) => this.set(k, this.resolve(v)))
+    }
+
+    static CreateResolvedFrom<T>(data: Dictionary<T>, key: string): InheritableJSON<T> {
+        const created = new InheritableJSON<T>(key);
+        created.apply(data);
+        created.resolveAll();
+        return created;
+
     }
 }
 
@@ -124,29 +155,26 @@ interface GameAdapterSettings {
     effects: Dictionary<JSONEffect>
 }
 
-interface JSONEntity {
+interface JSONEntity extends JSONRef {
     name: string
     attributes: Dictionary<number | JSONAttribute>
-    abilities: Array<JSONRef>
+    abilities: Array<JSONAbility>
 }
 
-interface JSONAttribute {
+interface JSONAttribute extends JSONRef {
     name: string
     min: number
     max: number
     value?: number
 }
 
-interface JSONRef {
-    references: string
-}
 
-interface JSONAbility {
+interface JSONAbility extends JSONRef {
     name: string
-    effects: Array<JSONRef>
+    effects: Array<JSONEffect>
 }
 
-interface JSONEffect {
+interface JSONEffect extends JSONRef {
     tick: TimeUnit
     local?: any
     modifiers: Array<JSONModifier>,
@@ -158,4 +186,8 @@ interface JSONEffect {
 interface JSONModifier {
     attribute: string
     value: number | ModifierValue
+}
+
+interface JSONRef {
+    inherits?: string
 }

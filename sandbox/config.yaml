@@ -5,82 +5,42 @@ entities:
             health: 100
             mana: 100
         abilities:
-            - references: attack
-            - references: heal
-            - references: dot
+            - inherits: attack
+            - inherits: heal
+            - inherits: dot
     entity1:
-        references: basic
+        inherits: basic
         name: Entity 1
-        attributes:
-            health: 100
-            mana: 100
-        abilities:
-            - references: attack
-            - references: heal
-            - references: dot
     entity2:
-        references: basic
+        inherits: basic
         name: Entity 2
-        attributes:
-            health: 100
-            mana: 100
-        abilities:
-            - references: attack
-            - references: heal
-            - references: dot
     entity3:
-        references: basic
+        inherits: basic
         name: Entity 3
-        attributes:
-            health: 100
-            mana: 100
-        abilities:
-            - references: attack
-            - references: heal
-            - references: dot
     entity4:
-        references: basic
+        inherits: basic
         name: Entity 4
-        attributes:
-            health: 100
-            mana: 100
-        abilities:
-            - references: attack
-            - references: heal
-            - references: dot
 abilities:
     attack:
         name: Attack
         effects:
-            - references: damage
+            - inherits: damage
               duration: 0
-              modifiers:
-                - attribute: health
-                  value: -10
     heal:
         name: Heal
         effects:
-            - references: damage
+            - inherits: heal
               duration: 0
-              modifiers:
-                - attribute: health
-                  value: 10
     dot:
         name: Damage Over Time
         effects: 
-            - references: damage
+            - inherits: damage
               duration: 10
-              modifiers:
-                - attribute: health
-                  value: -10
     hot:
         name: Heal Over Time
         effects:
-            - references: damage
+            - inherits: heal
               duration: 10
-              modifiers:
-                - attribute: health
-                  value: 10
 attributes:
     health:
         name: Health

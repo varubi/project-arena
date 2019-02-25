@@ -36,13 +36,13 @@ export class Encounter {
     }
 
     getEntities(filter: Filter<Entity>): Array<Entity> {
-        return this.entities.filter(filter);
+        return this.entities.filter(filter).toArray();
     }
 
     entity(id: string): Entity {
         return this.entities.get(id)
     }
-    
+
     toJSON(): any {
         return {
             timekeeper: this.timekeeper,
